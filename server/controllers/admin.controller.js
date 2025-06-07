@@ -1,4 +1,5 @@
 import { Admin } from "../models/admin.models.js";
+import { User } from '../models/user.models.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -75,5 +76,15 @@ export const loginAdmin = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+}
+
+export const getUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.status(200).json({ users })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error. Please try again later.' })
     }
 }
