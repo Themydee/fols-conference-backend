@@ -1,5 +1,5 @@
 import { User } from '../models/user.models.js'
-
+import transporter from '../mailer/mailsend.config.js';
 
 export const register = async (req, res) => {
     try {
@@ -14,6 +14,8 @@ export const register = async (req, res) => {
             return res.status(400).json({ message: 'Email is already registered' })
         }
 
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
         const newUser = new User({
             name,
             email,
@@ -22,13 +24,26 @@ export const register = async (req, res) => {
             gender,
             parish,
             area,
-            designation
+            designation,
+            code
         })
 
         await newUser.save();
 
-        res.status(201).json({
-            message: 'Registration successful!',
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: "Your Conference Code", // <-- fixed here
+            text: `Your conference code is ${code}`,
+        }
+
+
+       console.log("About to send email...");
+        await transporter.sendMail(mailOptions);
+        transporter.close(); // <-- force close transporter if it hangs
+        console.log("Email sent, about to respond...");
+        return res.status(201).json({
+            message: 'Registration successful! Your conference code has been sent to your email',
             user: {
                 id: newUser._id,
                 name: newUser.name,
@@ -40,11 +55,12 @@ export const register = async (req, res) => {
                 area: newUser.area,
                 designation: newUser.designation,
                 checkedIn: newUser.checkedIn,
-                registeredAt: newUser.registeredAt
+                registeredAt: newUser.registeredAt,
+                code: newUser.code
             }
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error. Please try again later.' })
+        return res.status(500).json({ message: 'Server error. Please try again later.' })
     }
 }
